@@ -1,6 +1,3 @@
-✗ Create README.md
-  └ Permission denied and could not request permission from user
-
 # 📡 Release Radar
 
 > Analyse what's shipping — generate a polished release summary from your GitHub diff in seconds.

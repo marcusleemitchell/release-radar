@@ -14,7 +14,10 @@ const baseSelect = document.getElementById("base-select");
 const baseHint = document.getElementById("base-hint");
 const baseRefresh = document.getElementById("base-refresh");
 const baseCacheHint = document.getElementById("base-cache-hint");
-const headInput = document.getElementById("head-input");
+const headSelect = document.getElementById("head-select");
+const headHint = document.getElementById("head-hint");
+const headRefresh = document.getElementById("head-refresh");
+const headCacheHint = document.getElementById("head-cache-hint");
 const analyseBtn = document.getElementById("analyse-btn");
 const errorBanner = document.getElementById("error-banner");
 const errorMessage = document.getElementById("error-message");
@@ -76,6 +79,59 @@ function formatCacheAge(cachedAt) {
   if (mins < 60) return `Cached ${mins} min${mins === 1 ? "" : "s"} ago`;
   const hrs = Math.round(mins / 60);
   return `Cached ${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+}
+
+// ============================================================
+// Load branches for a repo and populate head selector
+// ============================================================
+
+async function loadBranches(repo, refresh = false) {
+  headSelect.disabled = true;
+  headRefresh.disabled = true;
+  headSelect.innerHTML = '<option value="">Loading branches…</option>';
+  headHint.textContent = "";
+  headCacheHint.textContent = "";
+
+  try {
+    const url = `/api/branches/${encodeURIComponent(repo)}${refresh ? "?refresh=true" : ""}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    headCacheHint.textContent = data._cached
+      ? formatCacheAge(data._cachedAt)
+      : "";
+
+    headSelect.innerHTML = "";
+
+    if (data.branches.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No branches found";
+      headSelect.appendChild(opt);
+      headHint.textContent = "This repo has no branches.";
+    } else {
+      for (const branch of data.branches) {
+        const opt = document.createElement("option");
+        opt.value = branch;
+        opt.textContent = branch;
+        headSelect.appendChild(opt);
+      }
+
+      // Default to master, then main, then first branch
+      const preferred = ["master", "main"];
+      const defaultBranch =
+        preferred.find((b) => data.branches.includes(b)) || data.branches[0];
+      headSelect.value = defaultBranch;
+      headHint.textContent = `✓ Defaulted to “${defaultBranch}”`;
+      headSelect.disabled = false;
+    }
+  } catch (err) {
+    headSelect.innerHTML = '<option value="">Failed to load branches</option>';
+    headHint.textContent = err.message;
+  } finally {
+    headRefresh.disabled = false;
+  }
 }
 
 // ============================================================
@@ -229,7 +285,7 @@ async function analyseRelease() {
     showError("Please select a base tag first.");
     return;
   }
-  const head = headInput.value.trim() || "master";
+  const head = headSelect.value || "master";
 
   hideError();
   resultsSection.hidden = true;
@@ -492,7 +548,10 @@ repoSelect.addEventListener("change", () => {
   const repo = repoSelect.value;
   analyseBtn.disabled = !repo;
   baseRefresh.disabled = !repo;
-  if (repo) loadTags(repo);
+  if (repo) {
+    loadTags(repo);
+    loadBranches(repo);
+  }
 });
 
 repoRefresh.addEventListener("click", () => loadRepos(true));
@@ -500,12 +559,9 @@ baseRefresh.addEventListener("click", () => {
   const repo = repoSelect.value;
   if (repo) loadTags(repo, true);
 });
-
-// Allow pressing Enter in head input to trigger analyse
-headInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !analyseBtn.disabled) {
-    analyseRelease();
-  }
+headRefresh.addEventListener("click", () => {
+  const repo = repoSelect.value;
+  if (repo) loadBranches(repo, true);
 });
 
 // ============================================================

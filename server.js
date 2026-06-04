@@ -9,6 +9,7 @@ const logger = require("./logger");
 const cache = require("./cache");
 
 const app = express();
+app.set("etag", false);
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -234,6 +235,84 @@ app.get("/api/tags/:repo", async (req, res) => {
       return res.status(404).json({ error: `Repository "${repo}" not found.` });
     }
     logger.error("tags.error", err.message, { repo, stack: err.stack });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/branches/:repo ─────────────────────────────────────────────────
+
+app.get("/api/branches/:repo", async (req, res) => {
+  const { repo } = req.params;
+  const refresh = req.query.refresh === "true";
+  const cacheKey = `branches:${ORG}:${repo}`;
+
+  logger.info("branches.start", `Fetching branches`, {
+    org: ORG,
+    repo,
+    refresh,
+  });
+
+  if (!ORG) {
+    logger.error("branches.error", "GITHUB_ORG not set");
+    return res
+      .status(500)
+      .json({ error: "GITHUB_ORG environment variable is not set." });
+  }
+
+  if (!refresh) {
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      logger.info("branches.cache_hit", `Serving branches from cache`, {
+        repo,
+        age_mins: Math.round((Date.now() - cached.cachedAt) / 60000),
+      });
+      return res.json({
+        ...cached.data,
+        _cached: true,
+        _cachedAt: cached.cachedAt,
+      });
+    }
+  } else {
+    cache.bust(cacheKey);
+  }
+
+  try {
+    const branches = await octokit.paginate(octokit.repos.listBranches, {
+      owner: ORG,
+      repo,
+      per_page: 100,
+    });
+
+    const branchNames = branches.map((b) => b.name);
+
+    // Sort: master/main first, then alphabetically
+    branchNames.sort((a, b) => {
+      const priority = (n) => (n === "master" || n === "main" ? 0 : 1);
+      const pa = priority(a);
+      const pb = priority(b);
+      if (pa !== pb) return pa - pb;
+      return a.localeCompare(b);
+    });
+
+    logger.info("branches.ok", `Found ${branchNames.length} branches`, {
+      repo,
+      count: branchNames.length,
+    });
+
+    const payload = { branches: branchNames };
+    cache.set(cacheKey, payload);
+    const entry = cache.get(cacheKey);
+
+    res.json({ ...payload, _cached: false, _cachedAt: entry.cachedAt });
+  } catch (err) {
+    if (err.status === 404) {
+      logger.warn("branches.not_found", `Repo "${repo}" not found`, {
+        repo,
+        status: 404,
+      });
+      return res.status(404).json({ error: `Repository "${repo}" not found.` });
+    }
+    logger.error("branches.error", err.message, { repo, stack: err.stack });
     res.status(500).json({ error: err.message });
   }
 });

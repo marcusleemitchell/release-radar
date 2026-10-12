@@ -1,20 +1,46 @@
 {
-  "name": "manifest",
+  "name": "release-radar",
+  "productName": "Release Radar",
   "version": "1.0.0",
-  "description": "Release diff summariser using GitHub and OpenAI",
-  "main": "server.js",
+  "description": "Release diff summariser using GitHub and the Copilot CLI",
+  "main": "main.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "electron": "electron .",
+    "icon": "electron build/render-icon.js && sh build/make-icns.sh",
+    "dist": "electron-builder --mac dir",
+    "dist:dmg": "electron-builder --mac dmg"
   },
   "dependencies": {
     "@octokit/rest": "^20.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "openai": "^4.20.1"
+    "express": "^4.18.2"
   },
   "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
     "nodemon": "^3.0.2"
+  },
+  "build": {
+    "appId": "com.local.release-radar",
+    "productName": "Release Radar",
+    "files": [
+      "main.js",
+      "server.js",
+      "cache.js",
+      "logger.js",
+      "paths.js",
+      "public/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "identity": null
+    }
   }
 }

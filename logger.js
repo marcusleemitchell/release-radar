@@ -19,7 +19,7 @@ const path = require("path");
 
 // ── Setup log directory & file ──────────────────────────────────────────────
 
-const LOG_DIR = path.join(__dirname, "logs");
+const { LOG_DIR } = require("./paths");
 const LOG_FILE = path.join(LOG_DIR, "app.log");
 
 if (!fs.existsSync(LOG_DIR)) {

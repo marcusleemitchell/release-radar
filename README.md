@@ -86,6 +86,25 @@ Additional context fields (repo name, route, status code, duration in ms, cache 
 - **Cache** — hits, misses, and manual invalidations, keyed by resource.
 - **Copilot CLI** — invocation arguments, process start, stdout/stderr, and exit code.
 
+## Desktop app (Electron)
+
+Release Radar can run as a standalone macOS app.
+
+```sh
+npm run electron    # run in an Electron window without packaging
+npm run dist        # build dist/mac-arm64/Release Radar.app (unsigned)
+npm run dist:dmg    # build a .dmg instead
+```
+
+The packaged app keeps its config, cache and logs in `~/Library/Application Support/Release Radar/`:
+
+- `.env` — set `GITHUB_TOKEN` and `GITHUB_ORG` here (created on first launch; also reachable from the app menu via **Open Config File**)
+- `cache/` and `logs/`
+
+The `copilot` CLI is not bundled. The app resolves your shell `PATH` at launch so it can find it; if it lives somewhere unusual, set `COPILOT_BIN` in the `.env` file.
+
+Because the app is unsigned, the first launch of a copy that has been moved or downloaded may need right-click → Open.
+
 ## Development
 
 ```sh

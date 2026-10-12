@@ -11,9 +11,9 @@
 const fs = require("fs");
 const path = require("path");
 const logger = require("./logger");
+const { CACHE_DIR } = require("./paths");
 
 const TTL_MS = 24 * 60 * 60 * 1000;
-const CACHE_DIR = path.join(__dirname, "cache");
 const CACHE_FILE = path.join(CACHE_DIR, "cache.json");
 
 // ── Ensure cache directory exists ───────────────────────────────────────────

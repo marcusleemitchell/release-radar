@@ -7,6 +7,7 @@ const { spawn } = require("child_process");
 const path = require("path");
 const logger = require("./logger");
 const cache = require("./cache");
+const { LOG_DIR } = require("./paths");
 
 const app = express();
 app.set("etag", false);
@@ -650,6 +651,7 @@ ${prSummaries}
 Write a concise, friendly release summary aimed at end users (not developers).
 - Start with a brief one or two sentence intro paragraph summarising the overall theme of this release.
 - Follow with a bullet list of the key features, improvements, and bug fixes.
+- Each bullet point must end with the PR number(s) it relates to in parentheses, e.g. (#123) or (#123, #456).
 - Focus on what users will experience, not technical implementation details.
 - Keep language clear and accessible. Avoid jargon.
 - Format the output as Markdown.`;
@@ -770,11 +772,14 @@ app.get("*", (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-  logger.separator(`Release Radar started — http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  const port = server.address().port;
+  logger.separator(`Release Radar started — http://localhost:${port}`);
   logger.info("server.start", `Server listening`, {
-    port: PORT,
+    port,
     org: ORG || "(not set)",
-    log_file: require("path").join(__dirname, "logs", "app.log"),
+    log_file: path.join(LOG_DIR, "app.log"),
   });
 });
+
+module.exports = server;

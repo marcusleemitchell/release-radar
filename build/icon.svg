@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f2733"/>
+      <stop offset="1" stop-color="#0b0f14"/>
+    </linearGradient>
+    <radialGradient id="disc" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#14304f" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0d1117" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sweep" gradientUnits="userSpaceOnUse" x1="372" y1="213" x2="677" y2="226">
+      <stop offset="0" stop-color="#58a6ff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#58a6ff" stop-opacity="0.65"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App tile (macOS template: ~100px margin, rounded square) -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="184.5" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+
+  <!-- Radar disc glow -->
+  <circle cx="512" cy="512" r="330" fill="url(#disc)"/>
+
+  <!-- Crosshair -->
+  <g stroke="#58a6ff" stroke-opacity="0.22" stroke-width="6" stroke-linecap="round">
+    <line x1="512" y1="182" x2="512" y2="842"/>
+    <line x1="182" y1="512" x2="842" y2="512"/>
+  </g>
+
+  <!-- Range rings -->
+  <g fill="none" stroke="#58a6ff" stroke-width="10">
+    <circle cx="512" cy="512" r="330" stroke-opacity="0.65"/>
+    <circle cx="512" cy="512" r="220" stroke-opacity="0.42"/>
+    <circle cx="512" cy="512" r="110" stroke-opacity="0.28"/>
+  </g>
+
+  <!-- Sweep wedge + arm -->
+  <path d="M512 512 L372.5 212.9 A330 330 0 0 1 677 226.2 Z" fill="url(#sweep)"/>
+  <line x1="512" y1="512" x2="677" y2="226.2" stroke="#79b8ff" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Blips -->
+  <g>
+    <circle cx="600" cy="345" r="46" fill="#3fb950" fill-opacity="0.22"/>
+    <circle cx="600" cy="345" r="24" fill="#56d364"/>
+    <circle cx="420" cy="650" r="18" fill="#3fb950" fill-opacity="0.85"/>
+    <circle cx="665" cy="625" r="14" fill="#3fb950" fill-opacity="0.7"/>
+  </g>
+
+  <!-- Centre -->
+  <circle cx="512" cy="512" r="22" fill="#58a6ff"/>
+  <circle cx="512" cy="512" r="9" fill="#0d1117"/>
+</svg>

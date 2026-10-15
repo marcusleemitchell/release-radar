@@ -332,6 +332,21 @@ body {
     color: var(--green);
 }
 
+.btn-copy[hidden] {
+    display: none;
+}
+
+.btn-copy:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.summary-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* ============================================================
    Error banner
    ============================================================ */
@@ -709,6 +724,10 @@ body {
     vertical-align: text-bottom;
     margin-left: 2px;
     animation: blink 1s step-end infinite;
+}
+
+.cursor[hidden] {
+    display: none;
 }
 
 @keyframes blink {

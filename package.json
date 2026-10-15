@@ -28,6 +28,7 @@
     "productName": "Release Radar",
     "files": [
       "main.js",
+      "preload.js",
       "server.js",
       "cache.js",
       "logger.js",

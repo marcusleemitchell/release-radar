@@ -105,6 +105,10 @@ The `copilot` CLI is not bundled. The app resolves your shell `PATH` at launch s
 
 Because the app is unsigned, the first launch of a copy that has been moved or downloaded may need right-click → Open.
 
+### Copy as image (for Slack)
+
+Once a summary has been generated, **Copy as image** (next to **Copy**) puts a screenshot of the whole release card on the clipboard, ready to paste into Slack. It captures at full retina resolution, includes the PR list even if it is taller than the window, and leaves out anything marked `data-no-capture` in `public/index.html` (currently the *Generate AI Summary* and *Copy as image* buttons). The button only appears in the desktop app, not when running via `npm start` in a browser.
+
 ## Development
 
 ```sh

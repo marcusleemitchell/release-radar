@@ -36,6 +36,12 @@ const summaryContainer = document.getElementById("summary-container");
 const summaryOutput = document.getElementById("summary-output");
 const summaryCursor = document.getElementById("summary-cursor");
 const copyBtn = document.getElementById("copy-btn");
+const copyImageBtn = document.getElementById("copy-image-btn");
+const copyImageLabel = document.getElementById("copy-image-label");
+
+// Only available inside the Electron shell (see preload.js)
+const canCopyImage = typeof window.releaseRadar?.copyImage === "function";
+copyImageBtn.hidden = !canCopyImage;
 
 // ============================================================
 // Helpers
@@ -60,6 +66,7 @@ function setAnalyseLoading(loading) {
 function setSummariseLoading(loading) {
   summariseBtn.disabled = loading;
   summariseBtn.textContent = loading ? "Generating…" : "Generate AI Summary";
+  copyImageBtn.disabled = loading;
 }
 
 function formatDate(isoString) {
@@ -492,6 +499,62 @@ copyBtn.addEventListener("click", async () => {
 });
 
 // ============================================================
+// Copy release card to clipboard as an image (Electron only)
+// ============================================================
+
+const CAPTURE_PADDING = 8; // px of page background around the card
+
+const nextFrame = () => new Promise((r) => requestAnimationFrame(r));
+
+async function copyReleaseImage() {
+  if (!canCopyImage || resultsSection.hidden) return;
+
+  copyImageBtn.disabled = true;
+  hideError();
+
+  // Take controls marked data-no-capture out of the layout for the shot
+  const excluded = Array.from(
+    resultsSection.querySelectorAll("[data-no-capture]"),
+  ).map((el) => ({ el, display: el.style.display }));
+  excluded.forEach(({ el }) => (el.style.display = "none"));
+
+  try {
+    // Let the browser lay out without those controls before measuring, and
+    // wait for any fade-in animations so we never capture a half-faded card
+    await nextFrame();
+    await nextFrame();
+    const running = resultsSection
+      .getAnimations({ subtree: true })
+      .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity);
+    await Promise.allSettled(running.map((a) => a.finished));
+
+    const box = resultsSection.getBoundingClientRect();
+    const x = Math.max(0, box.left + window.scrollX - CAPTURE_PADDING);
+    const y = Math.max(0, box.top + window.scrollY - CAPTURE_PADDING);
+    const rect = {
+      x,
+      y,
+      width: box.right + window.scrollX + CAPTURE_PADDING - x,
+      height: box.bottom + window.scrollY + CAPTURE_PADDING - y,
+    };
+
+    await window.releaseRadar.copyImage(rect, window.devicePixelRatio || 1);
+
+    copyImageBtn.classList.add("copied");
+    copyImageLabel.textContent = "Copied!";
+    setTimeout(() => {
+      copyImageBtn.classList.remove("copied");
+      copyImageLabel.textContent = "Copy as image";
+    }, 2000);
+  } catch (err) {
+    showError(`Could not copy image: ${err.message}`);
+  } finally {
+    excluded.forEach(({ el, display }) => (el.style.display = display));
+    copyImageBtn.disabled = false;
+  }
+}
+
+// ============================================================
 // Collapsible PR list
 // ============================================================
 
@@ -543,6 +606,7 @@ errorDismiss.addEventListener("click", hideError);
 analyseBtn.addEventListener("click", analyseRelease);
 
 summariseBtn.addEventListener("click", generateSummary);
+copyImageBtn.addEventListener("click", copyReleaseImage);
 
 repoSelect.addEventListener("change", () => {
   const repo = repoSelect.value;

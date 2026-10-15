@@ -9,7 +9,16 @@
  *  4. Start the Express server on a free port and show it in a window.
  */
 
-const { app, BrowserWindow, Menu, dialog, shell } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  clipboard,
+  dialog,
+  ipcMain,
+  nativeImage,
+  shell,
+} = require("electron");
 const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -75,6 +84,7 @@ fixPath();
 
 let mainWindow = null;
 let server = null;
+let serverOrigin = null;
 
 function configMissing() {
   return !process.env.GITHUB_TOKEN || !process.env.GITHUB_ORG;
@@ -108,7 +118,11 @@ function createWindow(port) {
     width: 1100,
     height: 900,
     title: "Release Radar",
-    webPreferences: { contextIsolation: true, nodeIntegration: false },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, "preload.js"),
+    },
   });
 
   // Open external links (PR URLs, compare link) in the default browser
@@ -117,7 +131,8 @@ function createWindow(port) {
     return { action: "deny" };
   });
 
-  mainWindow.loadURL(`http://127.0.0.1:${port}`);
+  serverOrigin = `http://127.0.0.1:${port}`;
+  mainWindow.loadURL(serverOrigin);
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -152,6 +167,52 @@ function buildMenu() {
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
+
+// ── Copy a region of the page to the clipboard as an image ─────────────────────────────────
+
+const isNum = (n) => typeof n === "number" && Number.isFinite(n);
+
+ipcMain.handle("copy-image", async (event, rect, scale) => {
+  const wc = event.sender;
+
+  // Only our own page may ask for this
+  if (!serverOrigin || !event.senderFrame?.url.startsWith(serverOrigin)) {
+    throw new Error("Untrusted sender");
+  }
+  if (
+    !rect ||
+    ![rect.x, rect.y, rect.width, rect.height].every(isNum) ||
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) {
+    throw new Error("Invalid capture region");
+  }
+  const dpr = isNum(scale) && scale > 0 ? Math.min(scale, 4) : 1;
+
+  // The debugger protocol can capture beyond the visible viewport, so a
+  // card taller than the window still comes out in one piece.
+  let attachedHere = false;
+  try {
+    if (!wc.debugger.isAttached()) {
+      wc.debugger.attach("1.3");
+      attachedHere = true;
+    }
+    const { data } = await wc.debugger.sendCommand("Page.captureScreenshot", {
+      format: "png",
+      captureBeyondViewport: true,
+      clip: {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+        scale: dpr,
+      },
+    });
+    clipboard.writeImage(nativeImage.createFromBuffer(Buffer.from(data, "base64")));
+  } finally {
+    if (attachedHere && wc.debugger.isAttached()) wc.debugger.detach();
+  }
+});
 
 app.whenReady().then(async () => {
   if (process.platform === "darwin" && !app.isPackaged) {
